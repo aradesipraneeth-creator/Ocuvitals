@@ -16,12 +16,17 @@ from typing import List, Optional, Tuple
 import cv2
 import numpy as np
 
-try:
-    import mediapipe as mp  # type: ignore
-    _HAS_MP_SOLUTIONS = hasattr(mp, "solutions") and hasattr(mp.solutions, "face_mesh")
-except Exception:
-    mp = None
-    _HAS_MP_SOLUTIONS = False
+from src.pretrained_loader import is_lite_mode
+
+_HAS_MP_SOLUTIONS = False
+mp = None
+if not is_lite_mode():
+    try:
+        import mediapipe as mp  # type: ignore
+        _HAS_MP_SOLUTIONS = hasattr(mp, "solutions") and hasattr(mp.solutions, "face_mesh")
+    except Exception:
+        mp = None
+        _HAS_MP_SOLUTIONS = False
 
 
 # MediaPipe FaceMesh landmark indices (with refine_landmarks=True)
@@ -192,15 +197,14 @@ class EyeVisionTracker:
         p90 = np.percentile(center_patch, 90) if center_patch.size else 120.0
         is_blink = (p90 - p10) < 22.0
 
-        # Estimate pupil radius using dark-threshold contour inside central iris zone
+        # Estimate pupil radius using intensity-anchored dark thresholds inside central iris zone
         pupil_ratio = 0.40
         if not is_blink and center_patch.size > 64:
             blur = cv2.GaussianBlur(center_patch, (7, 7), 0)
-            # Iris is darker than sclera; pupil is darkest core
-            iris_thresh = np.percentile(blur, 38)
-            pupil_thresh = np.percentile(blur, 14)
-            iris_area = float(np.sum(blur <= iris_thresh)) + 1e-6
-            pupil_area = float(np.sum(blur <= pupil_thresh))
+            # Iris is darker than bright sclera; pupil is deepest dark core (< 48)
+            iris_mask = blur < min(155.0, float(np.percentile(blur, 65)) - 15.0)
+            iris_area = float(np.sum(iris_mask)) + 1e-6
+            pupil_area = float(np.sum(blur < 48))
             pupil_ratio = float(np.clip(np.sqrt(pupil_area / iris_area), 0.22, 0.72))
 
         # Scleral & conjunctival sub-regions

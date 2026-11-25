@@ -11,14 +11,17 @@ from typing import List, Optional, Tuple, Union
 import cv2
 import numpy as np
 
-try:
-    import mediapipe as mp  # type: ignore
-    _HAS_MP_IMAGE = hasattr(mp, "Image") and hasattr(mp, "ImageFormat")
-except Exception:
-    mp = None
-    _HAS_MP_IMAGE = False
+from src.pretrained_loader import PretrainedModelRegistry, get_model_registry, is_lite_mode
 
-from src.pretrained_loader import PretrainedModelRegistry, get_model_registry
+_HAS_MP_IMAGE = False
+mp = None
+if not is_lite_mode():
+    try:
+        import mediapipe as mp  # type: ignore
+        _HAS_MP_IMAGE = hasattr(mp, "Image") and hasattr(mp, "ImageFormat")
+    except Exception:
+        mp = None
+        _HAS_MP_IMAGE = False
 
 
 REJECTION_MESSAGE = (

@@ -17,20 +17,14 @@ import os
 import urllib.request
 import cv2
 
-try:
-    import mediapipe as mp  # type: ignore
-    from mediapipe.tasks import python as mp_tasks  # type: ignore
-    from mediapipe.tasks.python import vision as mp_vision  # type: ignore
-    _HAS_MP_TASKS = True
-except Exception:
-    mp = None
-    mp_tasks = None
-    mp_vision = None
-    _HAS_MP_TASKS = False
-
-
 def is_lite_mode() -> bool:
     return bool(os.environ.get("RENDER") or os.environ.get("OCUVIITALS_LITE") == "1")
+
+
+_HAS_MP_TASKS = False
+mp = None
+mp_tasks = None
+mp_vision = None
 
 
 WEIGHTS_DIR = Path(__file__).resolve().parent.parent / "weights"
@@ -77,8 +71,14 @@ class PretrainedModelRegistry:
 
 
 def load_face_landmarker(weights_dir: Path = WEIGHTS_DIR) -> Tuple[Any, str]:
-    """Load Google's official pretrained MediaPipe Face Landmarker task."""
-    if not _HAS_MP_TASKS:
+    """Load Google's official pretrained MediaPipe Face Landmarker task (skipped in 512MB Lite mode)."""
+    if is_lite_mode():
+        return None, "OpenCV Haar + Anatomical Iris (Render Low-RAM)"
+
+    try:
+        from mediapipe.tasks import python as mp_tasks  # type: ignore
+        from mediapipe.tasks.python import vision as mp_vision  # type: ignore
+    except Exception:
         return None, "Unavailable (mediapipe.tasks missing)"
 
     task_path = weights_dir / "face_landmarker.task"
