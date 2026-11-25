@@ -13,11 +13,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+import os
 import urllib.request
 import cv2
-import torch
-import torch.nn as nn
-from torchvision import models
 
 try:
     import mediapipe as mp  # type: ignore
@@ -30,12 +28,9 @@ except Exception:
     mp_vision = None
     _HAS_MP_TASKS = False
 
-try:
-    import timm  # type: ignore
-    _HAS_TIMM = True
-except Exception:
-    timm = None
-    _HAS_TIMM = False
+
+def is_lite_mode() -> bool:
+    return bool(os.environ.get("RENDER") or os.environ.get("OCUVIITALS_LITE") == "1")
 
 
 WEIGHTS_DIR = Path(__file__).resolve().parent.parent / "weights"
@@ -72,7 +67,7 @@ class PretrainedModelRegistry:
 
     face_landmarker: Any = None
     haar_eye_cascade: Optional[cv2.CascadeClassifier] = None
-    vision_backbone: Optional[nn.Module] = None
+    vision_backbone: Any = None
     vision_feature_dim: int = 576
     sr_model: Any = None
     status_badges: Dict[str, str] = field(default_factory=dict)
@@ -117,24 +112,29 @@ def load_haar_eye_cascade() -> Tuple[Optional[cv2.CascadeClassifier], str]:
     return cascade, "OpenCV Haar Eye Cascade"
 
 
-def load_vision_backbone() -> Tuple[nn.Module, int, str]:
-    """Load pretrained foundation vision backbone, with low-RAM Render mode."""
-    import os
-    import socket
+def load_vision_backbone() -> Tuple[Any, int, str]:
+    """Load pretrained foundation vision backbone, skipping heavy torch on 512MB Render."""
+    if is_lite_mode():
+        return None, 576, "Render-Lite Spatial Colorimetric + Vascular Engine (Low-RAM)"
 
-    is_lite = bool(os.environ.get("RENDER") or os.environ.get("OCUVIITALS_LITE") == "1")
-    if is_lite:
-        try:
-            torch.set_num_threads(1)
-        except Exception:
-            pass
+    import socket
+    import torch
+    import torch.nn as nn
+    from torchvision import models
+
+    try:
+        import timm  # type: ignore
+        has_timm = True
+    except Exception:
+        timm = None
+        has_timm = False
 
     candidates = [
         ("swin_tiny_patch4_window7_224", "Swin-Tiny Pretrained (timm)"),
         ("convnext_small.fb_in22k_ft_in1k", "ConvNeXt-Small IN22k Pretrained (timm)"),
         ("vit_small_patch14_dinov2.lvd142m", "DINOv2 ViT-Small Pretrained (timm)"),
     ]
-    if _HAS_TIMM and not is_lite:
+    if has_timm:
         # Avoid 23s+ huggingface_hub retry backoff when offline
         online = False
         try:

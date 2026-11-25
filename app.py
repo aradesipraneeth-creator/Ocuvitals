@@ -15,28 +15,12 @@ import tempfile
 import time
 from pathlib import Path
 
-import cv2
 import numpy as np
-import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
-from PIL import Image
 
-from src.demo_generator import DEMO_PROFILES, ensure_sample_asset, generate_synthetic_eye_frames
-from src.explainability import generate_gradcam_overlay, generate_vessel_skeleton_overlay
-from src.eye_3d_viewer import build_3d_eye_digital_twin
-from src.eye_validator import REJECTION_MESSAGE, validate_eye_input
-from src.image_enhancer import enhance_eye_image
-from src.models import OcuviitalsFusionNet, predict_systemic_risks
-from src.pretrained_loader import get_model_registry
-from src.report_and_history import (
-    SUPPORTED_LANGUAGES,
-    HistoryStore,
-    build_multilingual_summary,
-    generate_pdf_triage_report,
-)
-from src.signal_processor import analyze_signals
-from src.vision_tracker import EyeVisionTracker
+from src.demo_generator import DEMO_PROFILES, generate_synthetic_eye_frames
+from src.report_and_history import SUPPORTED_LANGUAGES
 
 
 st.set_page_config(
@@ -99,6 +83,9 @@ st.markdown(
 
 @st.cache_resource
 def load_hub_and_model():
+    from src.models import OcuviitalsFusionNet
+    from src.pretrained_loader import get_model_registry
+
     registry = get_model_registry()
     model = OcuviitalsFusionNet(registry=registry, prefer_pretrained=True)
     return registry, model
@@ -111,6 +98,13 @@ def _finalize_pipeline(
     model,
     scan_label: str,
 ):
+    import cv2
+    from src.explainability import generate_gradcam_overlay, generate_vessel_skeleton_overlay
+    from src.eye_3d_viewer import build_3d_eye_digital_twin
+    from src.models import predict_systemic_risks
+    from src.report_and_history import HistoryStore, generate_pdf_triage_report
+    from src.signal_processor import analyze_signals
+
     vision_res.eye_roi_clahe = cv2.resize(enhanced_res.enhanced_bgr, (224, 224), interpolation=cv2.INTER_AREA)
     metrics = analyze_signals(
         vision_res.pupil_ratio,
@@ -151,6 +145,10 @@ def _finalize_pipeline(
 
 
 def run_gated_pipeline_on_frames(frames: list[np.ndarray], fps: float, scan_label: str = "Ocular Scan"):
+    from src.eye_validator import validate_eye_input
+    from src.image_enhancer import enhance_eye_image
+    from src.vision_tracker import EyeVisionTracker
+
     registry, model = load_hub_and_model()
     val_res = validate_eye_input(frames, registry=registry)
     if not val_res.is_valid:
@@ -169,6 +167,10 @@ def run_gated_pipeline_on_frames(frames: list[np.ndarray], fps: float, scan_labe
 
 
 def run_gated_pipeline_on_image(image_bgr: np.ndarray, scan_label: str = "Uploaded Eye Image"):
+    from src.eye_validator import validate_eye_input
+    from src.image_enhancer import enhance_eye_image
+    from src.vision_tracker import EyeVisionTracker
+
     registry, model = load_hub_and_model()
     val_res = validate_eye_input(image_bgr, registry=registry)
     if not val_res.is_valid:
@@ -186,6 +188,8 @@ def run_gated_pipeline_on_image(image_bgr: np.ndarray, scan_label: str = "Upload
 
 def capture_webcam_10s(duration_sec: int = 10, target_fps: float = 20.0, flash_plr: bool = True):
     """Capture a 10-second eye scan from webcam with optional Screen-Flash PLR stimulus."""
+    import cv2
+
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         return None, 0.0, "No local webcam detected. Use 'Upload Eye Video/Image' or 'Instant Clinical Sample Demo'."
@@ -235,6 +239,10 @@ def capture_webcam_10s(duration_sec: int = 10, target_fps: float = 20.0, flash_p
 
 
 def render_results(res: dict, language: str):
+    import plotly.graph_objects as go
+    from src.eye_validator import REJECTION_MESSAGE
+    from src.report_and_history import build_multilingual_summary
+
     if res.get("rejected"):
         st.error(f"🚫 {REJECTION_MESSAGE}")
         st.caption(f"Gatekeeper confidence: {res['validation'].confidence:.2f} | Downstream health metrics and 3D rendering blocked.")
@@ -458,6 +466,7 @@ def main():
                 dur_demo = 8.0 if is_lite else 10.0
                 frames = generate_synthetic_eye_frames(profile_name=profile_name, duration_sec=dur_demo, fps=fps_demo)
                 st.session_state["last_result"] = run_gated_pipeline_on_frames(frames, fps=fps_demo, scan_label=profile_name)
+                from src.pretrained_loader import get_model_registry
                 st.session_state["model_badges"] = get_model_registry().status_badges
                 del frames
                 gc.collect()
@@ -470,6 +479,8 @@ def main():
         if uploaded is not None:
             suffix = Path(uploaded.name).suffix.lower()
             if suffix in {".png", ".jpg", ".jpeg"}:
+                import cv2
+                from PIL import Image
                 img = Image.open(uploaded).convert("RGB")
                 img_bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
                 if st.button("🔬 Validate & Analyze Eye Image", type="primary"):
@@ -478,6 +489,7 @@ def main():
             else:
                 if st.button("🔬 Validate & Analyze Eye Video", type="primary"):
                     with st.spinner("Running Eye Gatekeeper, POS-rPPG extraction & 3D Twin..."):
+                        import cv2
                         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                             tmp.write(uploaded.read())
                             tmp_path = tmp.name
