@@ -1,4 +1,4 @@
-"""Automatic Medical Eye Quality Enhancement Pipeline for OptiScan AI.
+"""Automatic Medical Eye Quality Enhancement Pipeline for Ocuviitals.
 
 4-stage clinical enhancement pipeline:
 1. Anatomical Auto-Crop (15% margin preserving sclera, iris, pupil, lower conjunctiva).

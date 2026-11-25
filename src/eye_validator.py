@@ -1,4 +1,4 @@
-"""Strict Eye-Only Gatekeeper Validation for OptiScan AI (OcuVitals).
+"""Strict Eye-Only Gatekeeper Validation for Ocuviitals.
 
 Runs BEFORE any enhancement, inference, or 3D rendering to ensure only
 valid human eye images or videos enter the clinical pipeline.

@@ -6,13 +6,13 @@ import cv2
 import numpy as np
 import torch
 
-from src.models import OptiScanFusionNet, preprocess_for_model
+from src.models import OcuviitalsFusionNet, preprocess_for_model
 from src.signal_processor import AutonomicMetrics
 from src.vision_tracker import VisionExtractionResult
 
 
 def generate_gradcam_overlay(
-    model: OptiScanFusionNet,
+    model: OcuviitalsFusionNet,
     vision: VisionExtractionResult,
     metrics: AutonomicMetrics,
     target_class: int = 0,

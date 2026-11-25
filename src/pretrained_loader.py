@@ -1,4 +1,4 @@
-"""Pretrained Foundation & Clinical Model Hub for OptiScan AI (OcuVitals).
+"""Pretrained Foundation & Clinical Model Hub for Ocuviitals.
 
 Automatically downloads, caches locally in ./weights/, and loads:
 1. MediaPipe Face Landmarker (face_landmarker.task) + OpenCV haarcascade_eye.xml.
@@ -56,7 +56,7 @@ def _download_file(url: str, dest: Path, timeout: int = 15) -> bool:
         return True
     dest.parent.mkdir(parents=True, exist_ok=True)
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "OptiScanAI/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Ocuviitals/1.0"})
         with urllib.request.urlopen(req, timeout=timeout) as resp, open(dest, "wb") as f:
             f.write(resp.read())
         return dest.exists() and dest.stat().st_size > 1024

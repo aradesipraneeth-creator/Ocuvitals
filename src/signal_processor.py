@@ -1,4 +1,4 @@
-"""Signal Processing & Autonomic Metrics for OptiScan AI.
+"""Signal Processing & Autonomic Metrics for Ocuviitals.
 
 Includes:
 - Motion-robust POS (Plane-Orthogonal-to-Skin) rPPG extraction from RGB traces.

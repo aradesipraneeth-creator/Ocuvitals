@@ -1,4 +1,4 @@
-"""Multimodal PyTorch Architecture for OptiScan AI.
+"""Multimodal PyTorch Architecture for Ocuviitals.
 
 Combines:
 1. Spatial Branch: MobileNetV3-Small feature extractor on the CLAHE-enhanced eye ROI.
@@ -69,7 +69,7 @@ class GatedMultimodalFusion(nn.Module):
         return self.norm(fused)
 
 
-class OptiScanFusionNet(nn.Module):
+class OcuviitalsFusionNet(nn.Module):
     """Pretrained Foundation Vision Backbone (timm/torchvision) + BiLSTM with Gated Fusion."""
 
     def __init__(self, registry: Optional[PretrainedModelRegistry] = None, prefer_pretrained: bool = True) -> None:
@@ -202,11 +202,11 @@ def preprocess_for_model(
 
 
 def predict_systemic_risks(
-    model: OptiScanFusionNet,
+    model: OcuviitalsFusionNet,
     vision: VisionExtractionResult,
     metrics: AutonomicMetrics,
 ) -> SystemicRiskPrediction:
-    """Run OptiScanFusionNet + physiological calibration for calibrated triage risks."""
+    """Run OcuviitalsFusionNet + physiological calibration for calibrated triage risks."""
     model.eval()
     eye_tensor, seq_tensor = preprocess_for_model(vision, metrics)
 

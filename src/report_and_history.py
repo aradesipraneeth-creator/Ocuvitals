@@ -85,7 +85,7 @@ def build_multilingual_summary(
 
     if lang == "हिन्दी (Hindi)":
         return (
-            f"OcuVitals स्क्रीनिंग सारांश: प्राथमिकता स्तर {risk.triage_priority} है। "
+            f"Ocuviitals स्क्रीनिंग सारांश: प्राथमिकता स्तर {risk.triage_priority} है। "
             f"हृदय गति {metrics.heart_rate_bpm:.0f} BPM ({metrics.rhythm_flag}), "
             f"और तनाव सूचकांक {metrics.stress_index:.0f}/100 ({metrics.stress_level}) है। "
             f"एनीमिया (पीलापन) जोखिम {anemia}%, वैस्कुलर तनाव {vasc}%, और लिपिड/पीलिया संकेत {lipid}% हैं। "
@@ -93,14 +93,14 @@ def build_multilingual_summary(
         )
     if lang == "Español (Spanish)":
         return (
-            f"Resumen de triaje OcuVitals: Prioridad {risk.triage_priority}. "
+            f"Resumen de triaje Ocuviitals: Prioridad {risk.triage_priority}. "
             f"Frecuencia cardíaca {metrics.heart_rate_bpm:.0f} BPM ({metrics.rhythm_flag}), "
             f"Índice de estrés {metrics.stress_index:.0f}/100 ({metrics.stress_level}). "
             f"Riesgo de anemia {anemia}%, tensión vascular {vasc}% e indicadores lipídicos {lipid}%. "
             f"Prototipo de detección temprana; consulte a un médico."
         )
     return (
-        f"OcuVitals Triage Summary: Overall priority is {risk.triage_priority}. "
+        f"Ocuviitals Triage Summary: Overall priority is {risk.triage_priority}. "
         f"Heart rate is {metrics.heart_rate_bpm:.0f} BPM ({metrics.rhythm_flag}), "
         f"and Autonomic Stress Index is {metrics.stress_index:.0f} out of 100 ({metrics.stress_level}). "
         f"Systemic risk flags: Anemia/Pallor {anemia}%, Vascular Strain {vasc}%, Lipid/Icterus {lipid}%. "
@@ -133,7 +133,7 @@ def generate_pdf_triage_report(
     c.rect(0, height - 72, width, 72, fill=1, stroke=0)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 18)
-    c.drawString(36, height - 38, "OcuVitals / OptiScan AI - Clinical Triage Summary")
+    c.drawString(36, height - 38, "Ocuviitals - Clinical Triage Summary")
     c.setFont("Helvetica", 10)
     c.drawString(36, height - 56, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Signal Confidence: {risk.signal_confidence_pct:.0f}% (SQI {metrics.sqi_score:.0f}%)")
 
@@ -193,7 +193,7 @@ def generate_pdf_triage_report(
     c.drawString(
         36,
         35,
-        "OcuVitals / OptiScan AI is an early-warning wellness and triage screening prototype. "
+        "Ocuviitals is an early-warning wellness and triage screening prototype. "
         "It is NOT a standalone clinical diagnostic device.",
     )
 

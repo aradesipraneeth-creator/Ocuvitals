@@ -1,4 +1,4 @@
-"""End-to-end verification script for upgraded OcuVitals / OptiScan AI."""
+"""End-to-end verification script for Ocuviitals."""
 
 from pathlib import Path
 import sys
@@ -14,7 +14,7 @@ from src.explainability import generate_gradcam_overlay, generate_vessel_skeleto
 from src.eye_3d_viewer import build_3d_eye_digital_twin
 from src.eye_validator import REJECTION_MESSAGE, validate_eye_input
 from src.image_enhancer import enhance_eye_image
-from src.models import OptiScanFusionNet, predict_systemic_risks
+from src.models import OcuviitalsFusionNet, predict_systemic_risks
 from src.pretrained_loader import get_model_registry
 from src.report_and_history import HistoryStore, build_multilingual_summary, generate_pdf_triage_report
 from src.signal_processor import analyze_signals
@@ -22,7 +22,7 @@ from src.vision_tracker import EyeVisionTracker
 
 
 def main() -> None:
-    print("=== OcuVitals / OptiScan AI Upgraded Self-Test ===")
+    print("=== Ocuviitals End-to-End Self-Test ===")
 
     # 1. Pretrained Foundation & Clinical Model Hub
     reg = get_model_registry()
@@ -30,7 +30,7 @@ def main() -> None:
     for k, v in reg.status_badges.items():
         print(f"     - {k}: {v}")
 
-    model = OptiScanFusionNet(registry=reg, prefer_pretrained=True)
+    model = OcuviitalsFusionNet(registry=reg, prefer_pretrained=True)
 
     # 2. Strict Eye-Only Gatekeeper: Non-Eye Rejection Tests
     non_eye_cases = {

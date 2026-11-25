@@ -1,4 +1,4 @@
-"""Synthetic Realistic Eye Video & Signal Generator for OptiScan AI.
+"""Synthetic Realistic Eye Video & Signal Generator for Ocuviitals.
 
 Generates realistic synthetic ocular videos (with sclera, iris, dynamic pupil
 hippus/PLR, lower palpebral conjunctiva, blood vessels, natural blinks, and

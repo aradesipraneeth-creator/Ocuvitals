@@ -1,4 +1,4 @@
-"""OptiScan AI (OcuVitals) — Full Clinical Triage & 3D Digital Twin Dashboard.
+"""Ocuviitals — Full Clinical Triage & 3D Digital Twin Dashboard.
 
 Pipeline:
 Input -> Strict Eye-Only Gatekeeper -> Pretrained 4-Stage Enhancement ->
@@ -25,7 +25,7 @@ from src.explainability import generate_gradcam_overlay, generate_vessel_skeleto
 from src.eye_3d_viewer import build_3d_eye_digital_twin
 from src.eye_validator import REJECTION_MESSAGE, validate_eye_input
 from src.image_enhancer import enhance_eye_image
-from src.models import OptiScanFusionNet, predict_systemic_risks
+from src.models import OcuviitalsFusionNet, predict_systemic_risks
 from src.pretrained_loader import get_model_registry
 from src.report_and_history import (
     HistoryStore,
@@ -37,7 +37,7 @@ from src.vision_tracker import EyeVisionTracker
 
 
 st.set_page_config(
-    page_title="OcuVitals / OptiScan AI | Zero-Hardware Ocular Triage",
+    page_title="Ocuviitals | Zero-Hardware Ocular Triage",
     page_icon="👁️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -92,7 +92,7 @@ st.markdown(
 @st.cache_resource
 def load_hub_and_model():
     registry = get_model_registry()
-    model = OptiScanFusionNet(registry=registry, prefer_pretrained=True)
+    model = OcuviitalsFusionNet(registry=registry, prefer_pretrained=True)
     return registry, model
 
 
@@ -253,7 +253,7 @@ def render_results(res: dict, language: str):
         st.download_button(
             label="📄 Download Triage Report (PDF)",
             data=res["pdf_bytes"],
-            file_name="OcuVitals_Clinical_Triage_Report.pdf",
+            file_name="Ocuviitals_Clinical_Triage_Report.pdf",
             mime="application/pdf",
             use_container_width=True,
         )
@@ -387,7 +387,7 @@ def main():
     st.markdown(
         """
         <div class="main-header">
-            <h1>👁️ OcuVitals / OptiScan AI — Zero-Hardware Ocular Health Triage</h1>
+            <h1>👁️ Ocuviitals — Zero-Hardware Ocular Health Triage</h1>
             <p>Strict Eye Gatekeeper · Pretrained Swin-Tiny &amp; Super-Resolution · POS-rPPG &amp; PLR · Interactive 3D Ocular Digital Twin</p>
         </div>
         """,
@@ -397,7 +397,7 @@ def main():
     st.markdown(
         """
         <div class="disclaimer-banner">
-            <b>⚠️ Medical Disclaimer:</b> OcuVitals / OptiScan AI is an early-warning wellness and triage screening prototype
+            <b>⚠️ Medical Disclaimer:</b> Ocuviitals is an early-warning wellness and triage screening prototype
             for research and hackathon demonstration purposes. It is <b>not</b> a standalone clinical diagnostic device
             and does not replace laboratory blood panels, ECGs, or physician evaluation.
         </div>
@@ -482,7 +482,7 @@ def main():
         st.divider()
         render_results(st.session_state["last_result"], language=language)
     else:
-        st.info("Select an input mode above and click the action button to run OcuVitals / OptiScan AI.")
+        st.info("Select an input mode above and click the action button to run Ocuviitals.")
 
 
 if __name__ == "__main__":

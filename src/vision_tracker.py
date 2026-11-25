@@ -1,4 +1,4 @@
-"""Vision & ROI Tracker for OptiScan AI.
+"""Vision & ROI Tracker for Ocuviitals.
 
 Uses OpenCV and MediaPipe FaceMesh (with refine_landmarks=True) to extract:
 1. Normalized pupil-to-iris diameter ratio time-series.
