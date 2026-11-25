@@ -1,0 +1,16 @@
+# Virtual environment & caches
+.venv/
+__pycache__/
+*.py[cod]
+.cache/
+
+# Model weights & generated test assets
+weights/
+assets/*.avi
+assets/*.json
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
+AppData/
