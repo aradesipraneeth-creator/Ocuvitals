@@ -118,16 +118,23 @@ def load_haar_eye_cascade() -> Tuple[Optional[cv2.CascadeClassifier], str]:
 
 
 def load_vision_backbone() -> Tuple[nn.Module, int, str]:
-    """Load pretrained foundation vision backbone via timm, with torchvision fallback."""
+    """Load pretrained foundation vision backbone, with low-RAM Render mode."""
     import os
     import socket
+
+    is_lite = bool(os.environ.get("RENDER") or os.environ.get("OCUVIITALS_LITE") == "1")
+    if is_lite:
+        try:
+            torch.set_num_threads(1)
+        except Exception:
+            pass
 
     candidates = [
         ("swin_tiny_patch4_window7_224", "Swin-Tiny Pretrained (timm)"),
         ("convnext_small.fb_in22k_ft_in1k", "ConvNeXt-Small IN22k Pretrained (timm)"),
         ("vit_small_patch14_dinov2.lvd142m", "DINOv2 ViT-Small Pretrained (timm)"),
     ]
-    if _HAS_TIMM:
+    if _HAS_TIMM and not is_lite:
         # Avoid 23s+ huggingface_hub retry backoff when offline
         online = False
         try:

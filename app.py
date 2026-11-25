@@ -8,7 +8,9 @@ Interactive 3D Eye Twin + Vessel Skeleton + Baseline History + PDF Export.
 
 from __future__ import annotations
 
+import gc
 import json
+import os
 import tempfile
 import time
 from pathlib import Path
@@ -28,6 +30,7 @@ from src.image_enhancer import enhance_eye_image
 from src.models import OcuviitalsFusionNet, predict_systemic_risks
 from src.pretrained_loader import get_model_registry
 from src.report_and_history import (
+    SUPPORTED_LANGUAGES,
     HistoryStore,
     build_multilingual_summary,
     generate_pdf_triage_report,
@@ -46,13 +49,18 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+    html, body, [class*="css"] {
+        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
     .main-header {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0ea5e9 100%);
         padding: 1.4rem 1.8rem;
-        border-radius: 14px;
+        border-radius: 16px;
         color: #ffffff;
         margin-bottom: 1rem;
-        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+        border: 1px solid rgba(255,255,255,0.14);
     }
     .main-header h1 { margin: 0; font-size: 1.85rem; font-weight: 700; letter-spacing: -0.02em; }
     .main-header p { margin: 0.35rem 0 0 0; color: #cbd5e1; font-size: 0.95rem; }
@@ -300,11 +308,13 @@ def render_results(res: dict, language: str):
         st.write(summary_text)
         if st.button("🔊 Read Triage Summary Aloud"):
             escaped = json.dumps(summary_text)
+            tts_lang = json.dumps(SUPPORTED_LANGUAGES.get(language, "en-IN"))
             components.html(
                 f"""
                 <script>
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance({escaped});
+                u.lang = {tts_lang};
                 window.speechSynthesis.speak(u);
                 </script>
                 """,
@@ -381,14 +391,13 @@ def render_results(res: dict, language: str):
 
 
 def main():
-    ensure_sample_asset("assets", "Healthy Baseline")
-    registry, _ = load_hub_and_model()
+    is_lite = bool(os.environ.get("RENDER") or os.environ.get("OCUVIITALS_LITE") == "1")
 
     st.markdown(
         """
         <div class="main-header">
             <h1>👁️ Ocuviitals — Zero-Hardware Ocular Health Triage</h1>
-            <p>Strict Eye Gatekeeper · Pretrained Swin-Tiny &amp; Super-Resolution · POS-rPPG &amp; PLR · Interactive 3D Ocular Digital Twin</p>
+            <p>Strict Eye Gatekeeper · Pretrained Vision &amp; Super-Resolution · POS-rPPG &amp; PLR · Interactive 3D Ocular Digital Twin</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -415,11 +424,21 @@ def main():
                 "Live Webcam 10-Second Eye Scan",
             ],
         )
-        language = st.selectbox("Summary Language", ["English", "हिन्दी (Hindi)", "Español (Spanish)"])
+        language = st.selectbox("Summary Language", list(SUPPORTED_LANGUAGES.keys()))
         st.divider()
         st.markdown("**Active Pretrained Models**")
-        badge_lines = "<br>".join(f"• <b>{k}:</b> {v}" for k, v in registry.status_badges.items())
-        st.markdown(f'<div class="model-badge">{badge_lines}</div>', unsafe_allow_html=True)
+        if "model_badges" in st.session_state:
+            badge_lines = "<br>".join(f"• <b>{k}:</b> {v}" for k, v in st.session_state["model_badges"].items())
+            st.markdown(f'<div class="model-badge">{badge_lines}</div>', unsafe_allow_html=True)
+        else:
+            mode_label = "MobileNetV3-Small (Render Lite)" if is_lite else "Swin-Tiny (timm)"
+            st.markdown(
+                f'<div class="model-badge">• <b>Landmarks:</b> MediaPipe FaceLandmarker v2<br>'
+                f'• <b>Eye Cascade:</b> OpenCV Haar Cascade<br>'
+                f'• <b>Backbone:</b> {mode_label}<br>'
+                f'• <b>Status:</b> Ready (Lazy-loaded on scan)</div>',
+                unsafe_allow_html=True,
+            )
 
     if "last_result" not in st.session_state:
         st.session_state["last_result"] = None
@@ -435,8 +454,13 @@ def main():
 
         if run_demo:
             with st.spinner(f"Validating, enhancing & modeling '{profile_name}'..."):
-                frames = generate_synthetic_eye_frames(profile_name=profile_name, duration_sec=10.0, fps=30.0)
-                st.session_state["last_result"] = run_gated_pipeline_on_frames(frames, fps=30.0, scan_label=profile_name)
+                fps_demo = 24.0 if is_lite else 30.0
+                dur_demo = 8.0 if is_lite else 10.0
+                frames = generate_synthetic_eye_frames(profile_name=profile_name, duration_sec=dur_demo, fps=fps_demo)
+                st.session_state["last_result"] = run_gated_pipeline_on_frames(frames, fps=fps_demo, scan_label=profile_name)
+                st.session_state["model_badges"] = get_model_registry().status_badges
+                del frames
+                gc.collect()
 
     elif mode == "Upload Eye Video / Image":
         uploaded = st.file_uploader(

@@ -16,7 +16,7 @@ from src.eye_validator import REJECTION_MESSAGE, validate_eye_input
 from src.image_enhancer import enhance_eye_image
 from src.models import OcuviitalsFusionNet, predict_systemic_risks
 from src.pretrained_loader import get_model_registry
-from src.report_and_history import HistoryStore, build_multilingual_summary, generate_pdf_triage_report
+from src.report_and_history import SUPPORTED_LANGUAGES, HistoryStore, build_multilingual_summary, generate_pdf_triage_report
 from src.signal_processor import analyze_signals
 from src.vision_tracker import EyeVisionTracker
 
@@ -78,7 +78,7 @@ def main() -> None:
 
             pdf_bytes = generate_pdf_triage_report(enh.raw_crop_rgb, enh.enhanced_rgb, vessel_rgb, met, risk)
             assert pdf_bytes.startswith(b"%PDF"), "Invalid PDF generated"
-            for lang in ["English", "हिन्दी (Hindi)", "Español (Spanish)"]:
+            for lang in SUPPORTED_LANGUAGES:
                 assert len(build_multilingual_summary(met, risk, lang=lang)) > 30
 
             store = HistoryStore(ROOT / "assets" / "test_history.json")

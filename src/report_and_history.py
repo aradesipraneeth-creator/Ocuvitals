@@ -73,36 +73,125 @@ class HistoryStore:
         }
 
 
+SUPPORTED_LANGUAGES: Dict[str, str] = {
+    "English": "en-IN",
+    "हिन्दी (Hindi)": "hi-IN",
+    "বাংলা (Bengali)": "bn-IN",
+    "తెలుగు (Telugu)": "te-IN",
+    "मराठी (Marathi)": "mr-IN",
+    "தமிழ் (Tamil)": "ta-IN",
+    "ગુજરાતી (Gujarati)": "gu-IN",
+    "ಕನ್ನಡ (Kannada)": "kn-IN",
+    "മലയാളം (Malayalam)": "ml-IN",
+    "ਪੰਜਾਬੀ (Punjabi)": "pa-IN",
+    "ଓଡ଼ିଆ (Odia)": "or-IN",
+    "অসমীয়া (Assamese)": "as-IN",
+    "اردو (Urdu)": "ur-IN",
+    "Español (Spanish)": "es-ES",
+}
+
+
 def build_multilingual_summary(
     metrics: AutonomicMetrics,
     risk: SystemicRiskPrediction,
     lang: str = "English",
 ) -> str:
-    """Return a clear, primary-care-friendly triage summary in English, Hindi, or Spanish."""
+    """Return a clear, primary-care-friendly triage summary in English, all major Indian languages, or Spanish."""
     anemia = int(round(risk.anemia_pallor_prob * 100))
     vasc = int(round(risk.vascular_strain_prob * 100))
     lipid = int(round(risk.lipid_icterus_prob * 100))
+    hr = f"{metrics.heart_rate_bpm:.0f}"
+    stress = f"{metrics.stress_index:.0f}"
+    prio = risk.triage_priority
+    rhy = metrics.rhythm_flag
+    lvl = metrics.stress_level
 
-    if lang == "हिन्दी (Hindi)":
-        return (
-            f"Ocuviitals स्क्रीनिंग सारांश: प्राथमिकता स्तर {risk.triage_priority} है। "
-            f"हृदय गति {metrics.heart_rate_bpm:.0f} BPM ({metrics.rhythm_flag}), "
-            f"और तनाव सूचकांक {metrics.stress_index:.0f}/100 ({metrics.stress_level}) है। "
-            f"एनीमिया (पीलापन) जोखिम {anemia}%, वैस्कुलर तनाव {vasc}%, और लिपिड/पीलिया संकेत {lipid}% हैं। "
+    templates = {
+        "हिन्दी (Hindi)": (
+            f"Ocuviitals स्क्रीनिंग सारांश: प्राथमिकता स्तर {prio} है। "
+            f"हृदय गति {hr} BPM ({rhy}), तनाव सूचकांक {stress}/100 ({lvl}) है। "
+            f"एनीमिया जोखिम {anemia}%, वैस्कुलर तनाव {vasc}%, लिपिड/पीलिया संकेत {lipid}% हैं। "
             f"यह केवल प्रारंभिक स्क्रीनिंग है, डॉक्टर की सलाह अवश्य लें।"
-        )
-    if lang == "Español (Spanish)":
-        return (
-            f"Resumen de triaje Ocuviitals: Prioridad {risk.triage_priority}. "
-            f"Frecuencia cardíaca {metrics.heart_rate_bpm:.0f} BPM ({metrics.rhythm_flag}), "
-            f"Índice de estrés {metrics.stress_index:.0f}/100 ({metrics.stress_level}). "
+        ),
+        "বাংলা (Bengali)": (
+            f"Ocuviitals স্ক্রিনিং সারসংক্ষেপ: অগ্রাধিকার স্তর {prio}। "
+            f"হৃদস্পন্দন {hr} BPM ({rhy}), স্ট্রেস সূচক {stress}/100 ({lvl})। "
+            f"অ্যানিমিয়া ঝুঁকি {anemia}%, ভাস্কুলার চাপ {vasc}%, লিপিড/জন্ডিস সংকেত {lipid}%। "
+            f"এটি কেবল প্রাথমিক স্ক্রিনিং; চিকিৎসকের পরামর্শ নিন।"
+        ),
+        "తెలుగు (Telugu)": (
+            f"Ocuviitals స్క్రీనింగ్ సారాంశం: ప్రాధాన్యత స్థాయి {prio}. "
+            f"హృదయ స్పందన {hr} BPM ({rhy}), ఒత్తిడి సూచిక {stress}/100 ({lvl}). "
+            f"రక్తహీనత ప్రమాదం {anemia}%, రక్తనాళ ఒత్తిడి {vasc}%, లిపిడ్/కామెర్లు {lipid}%. "
+            f"ఇది ప్రాథమిక స్క్రీనింగ్ మాత్రమే; వైద్యుడిని సంప్రదించండి."
+        ),
+        "मराठी (Marathi)": (
+            f"Ocuviitals तपासणी सारांश: प्राधान्य पातळी {prio} आहे. "
+            f"हृदय गती {hr} BPM ({rhy}), ताण निर्देशांक {stress}/100 ({lvl}) आहे. "
+            f"अॅनिमिया धोका {anemia}%, रक्तवाहिन्यांचा ताण {vasc}%, लिपिड/कावीळ संकेत {lipid}% आहेत. "
+            f"ही केवळ प्राथमिक तपासणी आहे; डॉक्टरांचा सल्ला घ्या."
+        ),
+        "தமிழ் (Tamil)": (
+            f"Ocuviitals பரிசோதனை சுருக்கம்: முன்னுரிமை நிலை {prio}. "
+            f"இதயத் துடிப்பு {hr} BPM ({rhy}), மன அழுத்த குறியீடு {stress}/100 ({lvl}). "
+            f"இரத்த சோகை ஆபத்து {anemia}%, இரத்த நாள அழுத்தம் {vasc}%, கொழுப்பு/மஞ்சள் காமாலை அறிகுறி {lipid}%. "
+            f"இது ஆரம்பநிலை பரிசோதனை மட்டுமே; மருத்துவரை அணுகவும்."
+        ),
+        "ગુજરાતી (Gujarati)": (
+            f"Ocuviitals સ્ક્રીનીંગ સારાંશ: પ્રાથમિકતા સ્તર {prio} છે. "
+            f"હૃદયના ધબકારા {hr} BPM ({rhy}), સ્ટ્રેસ ઇન્ડેક્સ {stress}/100 ({lvl}) છે. "
+            f"એનિમિયા જોખમ {anemia}%, વાસ્ક્યુલર તાણ {vasc}%, લિપિડ/કમળો સંકેત {lipid}% છે. "
+            f"આ માત્ર પ્રારંભિક તપાસ છે; ડૉક્ટરની સલાહ લો."
+        ),
+        "ಕನ್ನಡ (Kannada)": (
+            f"Ocuviitals ತಪಾಸಣೆ ಸಾರಾಂಶ: ಆದ್ಯತೆಯ ಮಟ್ಟ {prio}. "
+            f"ಹೃದಯ ಬಡಿತ {hr} BPM ({rhy}), ಒತ್ತಡ ಸೂಚ್ಯಂಕ {stress}/100 ({lvl}). "
+            f"ರಕ್ತಹೀನತೆ ಅಪಾಯ {anemia}%, ರಕ್ತನಾಳದ ಒತ್ತಡ {vasc}%, ಲಿಪಿಡ್/ಕಾಮಾಲೆ ಸೂಚನೆ {lipid}%. "
+            f"ಇದು ಪ್ರಾಥಮಿಕ ತಪಾಸಣೆ ಮಾತ್ರ; ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ."
+        ),
+        "മലയാളം (Malayalam)": (
+            f"Ocuviitals സ്ക്രീനിംഗ് സംഗ്രഹം: മുൻഗണനാ നില {prio}. "
+            f"ഹൃദയമിടിപ്പ് {hr} BPM ({rhy}), സ്ട്രെസ് സൂചിക {stress}/100 ({lvl}). "
+            f"വിളർച്ച സാധ്യത {anemia}%, വാസ്കുലർ സമ്മർദ്ദം {vasc}%, ലിപിഡ്/മഞ്ഞപ്പിത്ത സൂചന {lipid}%. "
+            f"ഇത് പ്രാഥമിക പരിശോധന മാത്രമാണ്; ഡോക്ടറെ സമീപിക്കുക."
+        ),
+        "ਪੰਜਾਬੀ (Punjabi)": (
+            f"Ocuviitals ਜਾਂਚ ਸਾਰ: ਤਰਜੀਹ ਪੱਧਰ {prio} ਹੈ। "
+            f"ਦਿਲ ਦੀ ਧੜਕਣ {hr} BPM ({rhy}), ਤਣਾਅ ਸੂਚਕ {stress}/100 ({lvl}) ਹੈ। "
+            f"ਅਨੀਮੀਆ ਖਤਰਾ {anemia}%, ਨਾੜੀ ਦਬਾਅ {vasc}%, ਲਿਪਿਡ/ਪੀਲੀਆ ਸੰਕੇਤ {lipid}% ਹਨ। "
+            f"ਇਹ ਸਿਰਫ਼ ਸ਼ੁਰੂਆਤੀ ਜਾਂਚ ਹੈ; ਡਾਕਟਰ ਦੀ ਸਲਾਹ ਲਓ।"
+        ),
+        "ଓଡ଼ିଆ (Odia)": (
+            f"Ocuviitals ସ୍କ୍ରିନିଂ ସାରାଂଶ: ପ୍ରାଥମିକତା ସ୍ତର {prio}। "
+            f"ହୃଦସ୍ପନ୍ଦନ {hr} BPM ({rhy}), ଚାପ ସୂଚକାଙ୍କ {stress}/100 ({lvl})। "
+            f"ରକ୍ତହୀନତା ବିପଦ {anemia}%, ରକ୍ତନଳୀ ଚାପ {vasc}%, ଲିପିଡ୍/ଜଣ୍ଡିସ୍ ସଙ୍କେତ {lipid}%। "
+            f"ଏହା କେବଳ ପ୍ରାଥମିକ ପରୀକ୍ଷା; ଡାକ୍ତରଙ୍କ ପରାମର୍ଶ ନିଅନ୍ତୁ।"
+        ),
+        "অসমীয়া (Assamese)": (
+            f"Ocuviitals স্ক্ৰীণিং সাৰাংশ: অগ্ৰাধিকাৰ স্তৰ {prio}। "
+            f"হৃদস্পন্দন {hr} BPM ({rhy}), মানসিক চাপ সূচক {stress}/100 ({lvl})। "
+            f"ৰক্তহীনতাৰ আশংকা {anemia}%, ৰক্তবাহী নলীৰ চাপ {vasc}%, লিপিড/জণ্ডিছ সংকেত {lipid}%। "
+            f"এয়া কেৱল প্ৰাথমিক পৰীক্ষা; চিকিৎসকৰ পৰামৰ্শ লওক।"
+        ),
+        "اردو (Urdu)": (
+            f"Ocuviitals اسکریننگ خلاصہ: ترجیحی سطح {prio} ہے۔ "
+            f"دل کی دھڑکن {hr} BPM ({rhy})، تناؤ انڈیکس {stress}/100 ({lvl}) ہے۔ "
+            f"انیمیا کا خطرہ {anemia}%، عروقی دباؤ {vasc}%، لپڈ/یرقان علامات {lipid}% ہیں۔ "
+            f"یہ صرف ابتدائی اسکریننگ ہے؛ ڈاکٹر سے مشورہ کریں۔"
+        ),
+        "Español (Spanish)": (
+            f"Resumen de triaje Ocuviitals: Prioridad {prio}. "
+            f"Frecuencia cardíaca {hr} BPM ({rhy}), Índice de estrés {stress}/100 ({lvl}). "
             f"Riesgo de anemia {anemia}%, tensión vascular {vasc}% e indicadores lipídicos {lipid}%. "
             f"Prototipo de detección temprana; consulte a un médico."
-        )
+        ),
+    }
+
+    if lang in templates:
+        return templates[lang]
     return (
-        f"Ocuviitals Triage Summary: Overall priority is {risk.triage_priority}. "
-        f"Heart rate is {metrics.heart_rate_bpm:.0f} BPM ({metrics.rhythm_flag}), "
-        f"and Autonomic Stress Index is {metrics.stress_index:.0f} out of 100 ({metrics.stress_level}). "
+        f"Ocuviitals Triage Summary: Overall priority is {prio}. "
+        f"Heart rate is {hr} BPM ({rhy}), and Autonomic Stress Index is {stress} out of 100 ({lvl}). "
         f"Systemic risk flags: Anemia/Pallor {anemia}%, Vascular Strain {vasc}%, Lipid/Icterus {lipid}%. "
         f"This is an early-warning wellness screening prototype; consult a clinician for diagnosis."
     )
