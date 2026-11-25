@@ -187,12 +187,34 @@ def run_gated_pipeline_on_image(image_bgr: np.ndarray, scan_label: str = "Upload
 
 
 def capture_webcam_10s(duration_sec: int = 10, target_fps: float = 20.0, flash_plr: bool = True):
-    """Capture a 10-second eye scan from webcam with optional Screen-Flash PLR stimulus."""
+    """Capture a 10-second eye scan from a local webcam (with DirectShow fallback on Windows)."""
     import cv2
 
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        return None, 0.0, "No local webcam detected. Use 'Upload Eye Video/Image' or 'Instant Clinical Sample Demo'."
+    cap = None
+    backend_candidates = (
+        [(0, cv2.CAP_DSHOW), (0, cv2.CAP_ANY), (1, cv2.CAP_DSHOW), (1, cv2.CAP_ANY)]
+        if os.name == "nt"
+        else [(0, cv2.CAP_ANY), (1, cv2.CAP_ANY)]
+    )
+    for cam_idx, api_pref in backend_candidates:
+        try:
+            candidate = cv2.VideoCapture(cam_idx, api_pref)
+            if candidate is not None and candidate.isOpened():
+                ok_test, _ = candidate.read()
+                if ok_test:
+                    cap = candidate
+                    break
+                candidate.release()
+        except Exception:
+            pass
+
+    if cap is None:
+        return (
+            None,
+            0.0,
+            "No server-side webcam accessible (normal on cloud servers like Render, or if another app is using the camera). "
+            "Use the **Browser Live Camera** tab above—it accesses your device camera directly!",
+        )
 
     frames = []
     preview_slot = st.empty()
@@ -505,14 +527,37 @@ def main():
                         st.session_state["last_result"] = run_gated_pipeline_on_frames(frames, fps=float(fps), scan_label=uploaded.name)
 
     elif mode == "Live Webcam 10-Second Eye Scan":
-        flash_plr = st.checkbox("☀️ Enable Screen-Flash Pupillary Light Reflex (PLR) Stimulus at 4s", value=True)
-        if st.button("📷 Start Live Webcam 10-Second Eye Scan", type="primary"):
-            frames, actual_fps, err = capture_webcam_10s(duration_sec=10, target_fps=20.0, flash_plr=flash_plr)
-            if err:
-                st.error(err)
-            elif frames is not None:
-                with st.spinner("Running Eye Gatekeeper, POS-rPPG & 3D Twin..."):
-                    st.session_state["last_result"] = run_gated_pipeline_on_frames(frames, fps=actual_fps, scan_label="Webcam Scan")
+        tab_browser, tab_local = st.tabs([
+            "🌐 Browser Live Camera (Works on Render & Local)",
+            "🎥 Local 10-Second Video Scan (rPPG + PLR)",
+        ])
+
+        with tab_browser:
+            st.caption("Uses your browser's camera directly (works on mobile, laptop, and Render cloud). Align one eye close to the lens and capture.")
+            cam_photo = st.camera_input("📷 Capture Live Eye Photo")
+            if cam_photo is not None:
+                import cv2
+                from PIL import Image
+                img = Image.open(cam_photo).convert("RGB")
+                img_bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+                if st.button("🔬 Validate & Analyze Live Eye Capture", type="primary"):
+                    with st.spinner("Running Eye Gatekeeper, Pretrained Enhancement & 3D Twin..."):
+                        st.session_state["last_result"] = run_gated_pipeline_on_image(img_bgr, scan_label="Browser Live Eye Capture")
+                        from src.pretrained_loader import get_model_registry
+                        st.session_state["model_badges"] = get_model_registry().status_badges
+
+        with tab_local:
+            st.caption("Captures a 10-second video stream from a locally attached webcam for full POS-rPPG + HRV + Screen-Flash PLR.")
+            flash_plr = st.checkbox("☀️ Enable Screen-Flash Pupillary Light Reflex (PLR) Stimulus at 4s", value=True)
+            if st.button("📷 Start Local 10-Second Webcam Scan", type="primary"):
+                frames, actual_fps, err = capture_webcam_10s(duration_sec=10, target_fps=20.0, flash_plr=flash_plr)
+                if err:
+                    st.warning(err)
+                elif frames is not None:
+                    with st.spinner("Running Eye Gatekeeper, POS-rPPG & 3D Twin..."):
+                        st.session_state["last_result"] = run_gated_pipeline_on_frames(frames, fps=actual_fps, scan_label="Webcam Scan")
+                        from src.pretrained_loader import get_model_registry
+                        st.session_state["model_badges"] = get_model_registry().status_badges
 
     if st.session_state["last_result"] is not None:
         st.divider()
